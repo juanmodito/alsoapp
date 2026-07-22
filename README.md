@@ -4,13 +4,13 @@
 
 ---
 
-## 🏗️ Architecture Overview
+## Architecture Overview
 
-The application is built as a single, unified **Next.js (App Router)** application running in Node.js server memory. It eliminates external proxy middleware and multi-tier REST API overhead by executing Google APIs directly within Next.js Server Components and Route Handlers.
+The application is built as a single, unified **Next.js 16.2.11 (App Router)** application running in Node.js server memory. It eliminates external proxy middleware and multi-tier REST API overhead by executing Google APIs directly within Next.js Server Components and Route Handlers.
 
 ```mermaid
 flowchart TD
-    User([Customer Browser]) <-->|HttpOnly Session Cookie| NextApp[Next.js 15 App Router]
+    User([Customer Browser]) <-->|HttpOnly Session Cookie| NextApp[Next.js 16 App Router]
     
     subgraph Server Side Logic
         NextApp -->|Direct Node.js Prefetching| ResellerSvc[Google Reseller API v1]
@@ -39,7 +39,7 @@ flowchart TD
 
 ---
 
-## 📁 Directory Structure
+## Directory Structure
 
 ```text
 ├── src/
@@ -77,7 +77,7 @@ flowchart TD
 
 ---
 
-## 🔑 Environment Configuration
+## Environment Configuration
 
 Create a `.env.local` file in the root directory by copying `.env.example`:
 
@@ -99,7 +99,7 @@ cp .env.example .env.local
 
 ---
 
-## 🚀 Running Locally
+## Running Locally
 
 1. **Install Dependencies**:
    ```bash
@@ -120,7 +120,7 @@ cp .env.example .env.local
 
 ---
 
-## 🐳 Production Deployment (GCP Cloud Run / Docker)
+## Production Deployment (GCP Cloud Run / Docker)
 
 The application includes an optimized multi-stage `Dockerfile` configured for **Next.js Standalone Mode** (`node server.js`), resulting in a lightweight container footprint (<150MB).
 
@@ -150,7 +150,7 @@ gcloud run deploy dito-orders-portal \
 
 ---
 
-## 🛠️ Maintenance & Operations Guide
+## Maintenance & Operations Guide
 
 ### 1. Updating Product Catalog & Pricing
 Product catalog options and pricing are managed live via Google Sheets (no code deployment required).
