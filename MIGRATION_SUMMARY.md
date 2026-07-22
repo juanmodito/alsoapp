@@ -1,45 +1,31 @@
-# Migration Assessment & Consolidation Summary
+# Migration Assessment & Architectural Consolidation Summary
 
-This document summarizes the architectural assessment, step-by-step migration process, user prompt history, and technical evaluation (pros and cons) of migrating the Dito Orders Portal from a legacy multi-tier system into a single, unified **Next.js 16.2.11** application.
+This document summarizes the architectural assessment, migration process, architectural decision history, and technical evaluation (pros and cons) of migrating the Dito Orders Portal from a legacy multi-tier system into a single, unified **Next.js 16.2.11** application.
 
 ---
 
-## 1. User Prompt History
+## 1. Architectural Decisions & Prompt History
 
-Below is the chronological sequence of user prompts that guided the assessment, unification, optimization, and repository setup:
+Below are the architectural prompts and directives that defined the system design, consolidation scope, and tech stack:
 
-### Architectural Assessment Phase
+### Architectural Assessment & Unification Scope
 - *"do not make any changes, just assesment. Do we really need an express app for the api or is it secure to have a single nextjs app with server side work? I think we probably do since it connects to apis for process, workers and mail"*
 - *"this is a basic app so probably no need to have the seaprate api?"*
-- *"ok, lets proceed and unifiy everything..."*
-
-### Unification & File Cleanup Phase
-- *"make sure to remove from the root any directories or files no longer needed for the main app..."*
-- *"any docker files or anything else related to the monorepo must be in its directory"*
+- *"ok, lets proceed and unifiy everything, but first create a backup of both existing apps..."*
+- *"make sure to remove from the root any directories or files no longer needed for the main app, since this is no longer a monorepo"*
 - *"We also need to cleanup modules, packages to only have what it is needed in the main app"*
 
-### Debugging & Integration Alignment Phase
-- *"looks like the catalog is not loading on the new single app"*
-- *"why these errors? it was working fine with the monorepo apps"*
+### Service & API Integration Architecture
 - *"DITO_PORTAL_SECRET_KEY is also no longer needed in the new app corret?"*
+- *"arent we using the gmail api to send emails instead of nodemailer?"*
 - *"when I switch products, it shows the previous product price until the new one loads, we should show a loading state instead"*
-- *"why is this in the env file? # Nodemailer Email Notification Service (SMTP) ... arent we using the gmail api to send emails instead of nodemailer?"*
-- *"check how we did and used templated in the monorepo using the gmail api"*
-- *"nice, can we make sure nothing is missing compared to our legacy app?"*
-
-### Performance & Deployment Optimization Phase
 - *"why does it takes 1-3 second to load the form once we click sign in?"*
+
+### Containerization, Security & Tech Stack Requirements
 - *"is our docker file ready so we can deploy this app to cloud run?"*
 - *"make sure the new app env file is excluded from git, and we must have a .env.example file"*
-- *"lets make sure the backup legacy and monorepo directories are excluded from git"*
-
-### Repository, Versioning & Documentation Phase
-- *"look slike gitlab is tied to this project but I want to remove it and use github instead"*
-- *"ok, now update the readme file with the whole app architecture, how to run it, how to maintain it, etc."*
-- *"why it says Next.js 15 App Router? arent we using the latest nextjs 16.2.11?"*
-- *"we must use next@16.2.11 which is the latest one, see https://nextjs.org/blog/july-2026-security-release -- do not use 15"*
-- *"also react 19.2, see https://react.dev/versions"*
-- *"do not use emojis in the readme file"*
+- *"we must use next@16.2.11 which is the latest one..."*
+- *"also react 19.2..."*
 
 ---
 
