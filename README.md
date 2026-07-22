@@ -6,7 +6,7 @@
 
 ## 🏗️ Architecture Overview
 
-The application is built as a single, unified **Next.js 15 (App Router)** application running in Node.js server memory. It eliminates external proxy middleware and multi-tier REST API overhead by executing Google APIs directly within Next.js Server Components and Route Handlers.
+The application is built as a single, unified **Next.js (App Router)** application running in Node.js server memory. It eliminates external proxy middleware and multi-tier REST API overhead by executing Google APIs directly within Next.js Server Components and Route Handlers.
 
 ```mermaid
 flowchart TD
