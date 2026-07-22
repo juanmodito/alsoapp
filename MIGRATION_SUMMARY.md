@@ -1,18 +1,17 @@
 # Migration Assessment & Architectural Consolidation Summary
 
-This document summarizes the architectural assessment, migration process, architectural decision history, and technical evaluation (pros and cons) of migrating the Dito Orders Portal from a legacy multi-tier system into a single, unified **Next.js 16.2.11** application.
+This document summarizes the architectural assessment, step-by-step migration process, architectural decision history, and technical evaluation (pros and cons) of migrating the Dito Orders Portal from a legacy multi-tier system into a single, unified **Next.js 16.2.11** application.
 
 ---
 
 ## 1. Architectural Decisions & Prompt History
 
-Below are the architectural prompts and directives that defined the system design, consolidation scope, and tech stack:
+Below are the key architectural prompts and directives that defined the system design, consolidation scope, and tech stack:
 
 ### Architectural Assessment & Unification Scope
 - *"do not make any changes, just assesment. Do we really need an express app for the api or is it secure to have a single nextjs app with server side work? I think we probably do since it connects to apis for process, workers and mail"*
 - *"this is a basic app so probably no need to have the seaprate api?"*
-- *"ok, lets proceed and unifiy everything, but first create a backup of both existing apps..."*
-- *"make sure to remove from the root any directories or files no longer needed for the main app, since this is no longer a monorepo"*
+- *"ok, lets proceed and unifiy everything..."*
 - *"We also need to cleanup modules, packages to only have what it is needed in the main app"*
 
 ### Service & API Integration Architecture
@@ -35,7 +34,7 @@ Below are the architectural prompts and directives that defined the system desig
    - Assessed that a separate Express API server was redundant for a lightweight application. Next.js App Router Server Components and Route Handlers natively support Node.js server-side API calls, secret credentials, and secure cookie sessions without exposing keys to the browser.
 
 2. **Backend API Consolidation**:
-   - Converted legacy Express REST endpoints into native Next.js App Router Route Handlers:
+   - Converted legacy REST endpoints into native Next.js App Router Route Handlers:
      - `GET /api/auth/context`
      - `GET / POST /api/auth/login`
      - `GET /api/products/list`
@@ -58,7 +57,7 @@ Below are the architectural prompts and directives that defined the system desig
 6. **Dependency & Environment Hardening**:
    - Cleaned `package.json` to 156 minimal dependencies.
    - Removed obsolete security proxy tokens (`DITO_PORTAL_SECRET_KEY`) and SMTP variables.
-   - Configured `.gitignore` to strictly exclude `.env.local` and legacy backup folders (`monorepo_backup/`) while tracking `.env.example`.
+   - Configured `.gitignore` to strictly exclude `.env.local` while tracking `.env.example`.
 
 7. **Production Container & Dockerization**:
    - Configured Next.js standalone output (`next.config.js`).
@@ -74,7 +73,7 @@ Below are the architectural prompts and directives that defined the system desig
 
 ### The Goods (Pros & Benefits)
 
-- **Zero Inter-Service Latency**: Eliminating the HTTP proxy layer between Next.js and Express reduced API response latency across all endpoints.
+- **Zero Inter-Service Latency**: Eliminating the HTTP proxy layer between frontend and backend reduced API response latency across all endpoints.
 - **Instant Server-Side Rendering (SSR)**: Parallel prefetching via `Promise.all()` allows the license request form to render with full data on the first byte.
 - **Simplified Operations & Infrastructure**: Single container deployment on GCP Cloud Run instead of managing multi-service container clusters or proxy routing.
 - **Enhanced Security & Reduced Surface Area**: Obsolete inter-service proxy keys (`DITO_PORTAL_SECRET_KEY`) were eliminated. Session tokens are secured in HttpOnly cookies (`dito_session`).
