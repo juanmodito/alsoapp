@@ -1,0 +1,56 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --dito-deep-blue: #133b72;
+  --dito-sky-blue: #4bbdff;
+  --dito-light-01: #9adaff;
+  --dito-light-02: #e5f5ff;
+  --dito-link: #1d7ce7;
+
+  --background: #0d274c;
+  --foreground: #0f172a;
+
+  --card: #ffffff;
+  --card-foreground: #0f172a;
+
+  --primary: #133b72;
+  --primary-foreground: #ffffff;
+
+  --secondary: #e5f5ff;
+  --secondary-foreground: #133b72;
+
+  --accent: #4bbdff;
+  --accent-foreground: #133b72;
+
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+
+  --border: #e2e8f0;
+  --input: #cbd5e1;
+  --ring: #4bbdff;
+  --radius: 0.75rem;
+}
+
+html, body {
+  background-color: #0d274c;
+  background-image: radial-gradient(at 50% 0%, #133b72 0%, #0d274c 100%);
+  background-attachment: fixed;
+  color: var(--foreground);
+  min-height: 100vh;
+}
+
+/* Glassmorphism utility card */
+.glass-card {
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.3);
+}
+
+.glass-card-subtle {
+  background: rgba(229, 245, 255, 0.6);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(154, 218, 255, 0.4);
+}
