@@ -15,7 +15,6 @@ Below are the key architectural prompts and directives that defined the system d
 - *"We also need to cleanup modules, packages to only have what it is needed in the main app"*
 
 ### Service & API Integration Architecture
-- *"DITO_PORTAL_SECRET_KEY is also no longer needed in the new app corret?"*
 - *"arent we using the gmail api to send emails instead of nodemailer?"*
 - *"when I switch products, it shows the previous product price until the new one loads, we should show a loading state instead"*
 - *"why does it takes 1-3 second to load the form once we click sign in?"*
@@ -56,7 +55,7 @@ Below are the key architectural prompts and directives that defined the system d
 
 6. **Dependency & Environment Hardening**:
    - Cleaned `package.json` to 156 minimal dependencies.
-   - Removed obsolete security proxy tokens (`DITO_PORTAL_SECRET_KEY`) and SMTP variables.
+   - Removed obsolete SMTP variables and unnecessary configuration keys.
    - Configured `.gitignore` to strictly exclude `.env.local` while tracking `.env.example`.
 
 7. **Production Container & Dockerization**:
@@ -76,7 +75,7 @@ Below are the key architectural prompts and directives that defined the system d
 - **Zero Inter-Service Latency**: Eliminating the HTTP proxy layer between frontend and backend reduced API response latency across all endpoints.
 - **Instant Server-Side Rendering (SSR)**: Parallel prefetching via `Promise.all()` allows the license request form to render with full data on the first byte.
 - **Simplified Operations & Infrastructure**: Single container deployment on GCP Cloud Run instead of managing multi-service container clusters or proxy routing.
-- **Enhanced Security & Reduced Surface Area**: Obsolete inter-service proxy keys (`DITO_PORTAL_SECRET_KEY`) were eliminated. Session tokens are secured in HttpOnly cookies (`dito_session`).
+- **Enhanced Security & Reduced Surface Area**: Inter-service proxy keys were eliminated. Session tokens are secured in HttpOnly cookies (`dito_session`).
 - **Minimal Docker Footprint**: Next.js standalone mode reduces image size from ~1GB to ~120MB, speeding up Cloud Run cold starts and container deployment times.
 
 ### The Bads (Challenges & Tradeoffs)
