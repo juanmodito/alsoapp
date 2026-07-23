@@ -36,6 +36,11 @@ export const ProductCombobox: React.FC<ProductComboboxProps> = ({
     );
   });
 
+  // Unique categories preserving order of products (Active Subscriptions first)
+  const categories = Array.from(
+    new Set(filteredProducts.map((p) => p.category || 'Software & Services'))
+  );
+
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -55,7 +60,7 @@ export const ProductCombobox: React.FC<ProductComboboxProps> = ({
         onClick={() => setOpen(!open)}
         className="w-full h-12 px-4 py-3 bg-white border border-slate-300 hover:border-[#1d7ce7] rounded-xl text-left font-semibold text-sm focus:outline-none focus:ring-2 focus:ring-[#1d7ce7] shadow-sm flex items-center justify-between gap-2 transition-all cursor-pointer"
       >
-        <span className="truncate text-slate-900">
+        <span className="truncate text-slate-900 font-bold">
           {selectedProduct ? selectedProduct.name : placeholder}
         </span>
         <ChevronsUpDown className="w-4 h-4 text-slate-400 shrink-0" />
@@ -63,8 +68,8 @@ export const ProductCombobox: React.FC<ProductComboboxProps> = ({
 
       {/* Popover Dropdown */}
       {open && (
-        <div className="absolute top-full left-0 mt-2 w-full bg-white border border-slate-200 rounded-2xl shadow-2xl z-50 overflow-hidden space-y-2 animate-in fade-in-50 zoom-in-95 duration-150">
-          
+        <div className="absolute top-full left-0 mt-2 w-full bg-white border border-slate-200 rounded-2xl shadow-2xl z-50 overflow-hidden animate-in fade-in-50 zoom-in-95 duration-150">
+
           {/* Search Box */}
           <div className="p-3 border-b border-slate-100 bg-slate-50/80 flex items-center gap-2">
             <Search className="w-4 h-4 text-slate-400 shrink-0" />
@@ -87,38 +92,54 @@ export const ProductCombobox: React.FC<ProductComboboxProps> = ({
             )}
           </div>
 
-          {/* Product List */}
-          <div className="max-h-64 overflow-y-auto p-1.5 space-y-1">
+          {/* Product List Grouped by Category */}
+          <div className="max-h-72 overflow-y-auto p-2 space-y-3">
             {filteredProducts.length === 0 ? (
               <div className="py-6 text-center text-xs text-slate-400 font-medium">
                 No matching products found.
               </div>
             ) : (
-              filteredProducts.map((prod, idx) => {
-                const isSelected = prod.product_key === selectedKey || prod.code === selectedKey;
+              categories.map((category) => {
+                const categoryProducts = filteredProducts.filter(
+                  (p) => (p.category || 'Software & Services') === category
+                );
+                if (categoryProducts.length === 0) return null;
+
+                const isSubGroup = category === 'Active Subscriptions';
+
                 return (
-                  <div
-                    key={`${prod.product_key}_${prod.code}_${idx}`}
-                    onClick={() => {
-                      onSelect(prod.product_key);
-                      setOpen(false);
-                      setSearch('');
-                    }}
-                    className={`px-3.5 py-2.5 rounded-xl text-xs font-semibold flex items-center justify-between cursor-pointer transition-colors ${
-                      isSelected
-                        ? 'bg-[#e5f5ff] text-[#133b72]'
-                        : 'hover:bg-slate-100 text-slate-700'
-                    }`}
-                  >
-                    <div className="flex flex-col text-left truncate pr-2">
-                      <span className="font-bold text-slate-900">{prod.name}</span>
-                      {prod.code && (
-                        <span className="text-[11px] text-slate-400 font-medium font-mono pt-0.5">{prod.code}</span>
-                      )}
+                  <div key={category} className="space-y-1">
+                    <div className="px-3 py-1.5 text-[11px] font-extrabold uppercase tracking-wider text-slate-500 bg-slate-100/70 rounded-lg flex items-center justify-between">
+                      <span>{isSubGroup ? 'ACTIVE SUBSCRIPTIONS' : 'ADDITIONAL SOFTWARE & SERVICES'}</span>
+                      <span className="text-[10px] font-medium text-slate-400">({categoryProducts.length})</span>
                     </div>
-                    {isSelected && (
-                      <Check className="w-4 h-4 text-[#1d7ce7] shrink-0" />
-                    )}
+                    {categoryProducts.map((prod, idx) => {
+                      const isSelected = prod.product_key === selectedKey || prod.code === selectedKey;
+                      return (
+                        <div
+                          key={`${prod.product_key}_${prod.code}_${idx}`}
+                          onClick={() => {
+                            onSelect(prod.product_key);
+                            setOpen(false);
+                            setSearch('');
+                          }}
+                          className={`px-3.5 py-2.5 rounded-xl text-xs font-semibold flex items-center justify-between cursor-pointer transition-colors ${isSelected
+                              ? 'bg-[#e5f5ff] text-[#133b72] border border-[#b3e0ff]'
+                              : 'hover:bg-slate-50 text-slate-700'
+                            }`}
+                        >
+                          <div className="flex flex-col text-left truncate pr-2">
+                            <span className="font-bold text-slate-900">{prod.name}</span>
+                            {prod.description && (
+                              <span className="text-[11px] text-slate-400 font-normal truncate pt-0.5">{prod.description}</span>
+                            )}
+                          </div>
+                          {isSelected && (
+                            <Check className="w-4 h-4 text-[#1d7ce7] shrink-0 ml-2" />
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 );
               })

@@ -1,59 +1,96 @@
 import { google } from 'googleapis';
+import path from 'path';
+import fs from 'fs';
+import { Product, Subscription } from '../types';
 
+const CLIENT_SECRET_PATH = path.join(process.cwd(), 'config', 'client_secret.json');
+const RESELLER_SCOPES = ['https://www.googleapis.com/auth/apps.order'];
 const SPREADSHEET_SCOPES = ['https://www.googleapis.com/auth/spreadsheets'];
-const RESELLER_SCOPES = [
-  'https://www.googleapis.com/auth/apps.order',
-  'https://www.googleapis.com/auth/apps.order.readonly'
-];
-
-export interface Product {
-  product_key: string;
-  name: string;
-  code: string;
-  description: string;
-  annual_cost: number;
-  monthly_cost: number;
-  daily_cost: number;
-  annual: boolean;
-  sku_id?: string;
-  active: boolean;
-  category?: string;
-}
 
 let cachedSheetsProducts: Product[] = [];
-let lastSheetsFetchTime = 0;
-const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes cache
+let lastSheetsFetchTime: number = 0;
+const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour cache
 
 /**
- * Returns JWT Client authenticated with GCP Service Account credentials
+ * Known SKU ID mapping dictionary for Google Workspace, Chrome, & Cloud Search products
  */
+const KNOWN_SKU_MAP: Record<string, string> = {
+  '1010020020': 'Google Workspace Business Starter',
+  '1010020025': 'Google Workspace Business Standard',
+  '1010020028': 'Google Workspace Business Plus',
+  '1010020030': 'Google Workspace Enterprise Starter',
+  '1010020031': 'Google Workspace Enterprise Standard',
+  '1010020032': 'Google Workspace Enterprise Plus',
+  '1010060001': 'Google Workspace Enterprise Plus - Archived User',
+  '1010060002': 'Google Workspace Business Standard - Archived User',
+  '1010060003': 'Google Workspace Business Plus - Archived User',
+  '1010310001': 'ChromeOS Enterprise Upgrade',
+  '1010310002': 'ChromeOS Upgrade',
+  '1010330001': 'Cloud Search Platform',
+  '1010010001': 'Cloud Identity Free',
+  '1010010002': 'Cloud Identity Premium'
+};
+
+/**
+ * Resolves a human-readable SKU name from skuName, catalog matching, or known SKU dictionary
+ */
+export function resolveSkuName(skuId?: string, skuName?: string, catalogProducts: Product[] = []): string {
+  if (skuName && skuName.trim().length > 0 && !skuName.startsWith('SKU_')) {
+    return skuName;
+  }
+
+  if (skuId && KNOWN_SKU_MAP[skuId]) {
+    return KNOWN_SKU_MAP[skuId];
+  }
+
+  const matched = catalogProducts.find(p => (p.sku_id && p.sku_id === skuId) || (p.code && p.code === skuId));
+  if (matched && matched.name) {
+    return matched.name;
+  }
+
+  return skuId ? `Google Product (${skuId})` : 'Google Workspace License';
+}
+
 export function getGoogleAuth(scopes: string[], subjectEmail?: string) {
-  const clientEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
+  const targetSubject = subjectEmail || process.env.GOOGLE_ADMIN_SUBJECT_EMAIL || 'michelle@reseller.ditoweb.com';
+  let clientEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
   let privateKey = process.env.GOOGLE_PRIVATE_KEY;
 
   if (!clientEmail || !privateKey) {
-    throw new Error('Google Service Account credentials (GOOGLE_SERVICE_ACCOUNT_EMAIL and GOOGLE_PRIVATE_KEY) are missing from environment variables.');
+    if (fs.existsSync(CLIENT_SECRET_PATH)) {
+      try {
+        const keyFile = JSON.parse(fs.readFileSync(CLIENT_SECRET_PATH, 'utf-8'));
+        clientEmail = keyFile.client_email;
+        privateKey = keyFile.private_key;
+      } catch (e) {
+        // ignore
+      }
+    }
   }
 
-  // Handle unescaped newline characters in environment variables
-  privateKey = privateKey.replace(/\\n/g, '\n');
+  if (!clientEmail || !privateKey) {
+    throw new Error('Google API credentials missing. Set GOOGLE_SERVICE_ACCOUNT_EMAIL and GOOGLE_PRIVATE_KEY environment variables.');
+  }
+
+  if (privateKey.includes('\\n')) {
+    privateKey = privateKey.replace(/\\n/g, '\n');
+  }
 
   return new google.auth.JWT({
     email: clientEmail,
     key: privateKey,
     scopes: scopes,
-    subject: subjectEmail || process.env.GOOGLE_ADMIN_SUBJECT_EMAIL || 'michelle@reseller.ditoweb.com'
+    subject: targetSubject
   });
 }
 
 /**
- * Fetches Google Workspace customer details via Google Reseller API v1
+ * Fetches Google Workspace Customer details from Reseller API v1
  */
 export async function getResellerCustomer(domain: string) {
   try {
     const auth = getGoogleAuth(RESELLER_SCOPES);
     const reseller = google.reseller({ version: 'v1', auth });
-
     const res = await reseller.customers.get({ customerId: domain });
     return { success: true, customer: res.data };
   } catch (error: any) {
@@ -63,27 +100,43 @@ export async function getResellerCustomer(domain: string) {
 }
 
 /**
- * Lists active subscriptions for a customer domain via Google Reseller API v1
+ * Lists active subscriptions for a customer domain from Reseller API v1
  */
-export async function listResellerSubscriptions(domain: string) {
+export async function listResellerSubscriptions(domain: string): Promise<Subscription[]> {
   try {
     const auth = getGoogleAuth(RESELLER_SCOPES);
     const reseller = google.reseller({ version: 'v1', auth });
+    const res = await reseller.subscriptions.list({ customerId: domain, maxResults: 100 });
+    const items = res.data.subscriptions || [];
 
-    const res = await reseller.subscriptions.list({
-      customerId: domain,
-      maxResults: 100
+    return items.map((sub: any) => {
+      const resolvedName = resolveSkuName(sub.skuId, sub.skuName, cachedSheetsProducts);
+      return {
+        subscriptionId: sub.subscriptionId || '',
+        customerDomain: domain,
+        skuId: sub.skuId || '',
+        skuName: resolvedName,
+        status: sub.status || 'ACTIVE',
+        plan: {
+          planName: sub.plan?.planName || 'FLEXIBLE'
+        },
+        seats: {
+          numberOfSeats: sub.seats?.numberOfSeats,
+          maximumNumberOfSeats: sub.seats?.maximumNumberOfSeats,
+          licensedNumberOfSeats: sub.seats?.licensedNumberOfSeats
+        },
+        billingMethod: sub.billingMethod || '',
+        creationTime: sub.creationTime
+      };
     });
-
-    return res.data.subscriptions || [];
   } catch (error: any) {
-    console.error(`[RESELLER API ERROR] Failed to list subscriptions for domain '${domain}':`, error.message);
+    console.error(`[RESELLER SUBSCRIPTIONS ERROR] Failed to list subscriptions for domain '${domain}':`, error.message);
     return [];
   }
 }
 
 /**
- * Updates seat counts for a subscription via Google Reseller API v1
+ * Updates seat count for a customer subscription via Reseller API v1
  */
 export async function updateResellerSeats(domain: string, subscriptionId: string, additionalSeats: number) {
   try {
@@ -95,20 +148,22 @@ export async function updateResellerSeats(domain: string, subscriptionId: string
       subscriptionId: subscriptionId
     });
 
-    const currentSeats = currentSub.data.seats?.numberOfSeats || currentSub.data.seats?.licensedNumberOfSeats || 0;
-    const updatedSeats = currentSeats + additionalSeats;
+    const planName = currentSub.data.plan?.planName || 'FLEXIBLE';
+    const attr = planName === 'ANNUAL' ? 'numberOfSeats' : 'maximumNumberOfSeats';
+    const currentSeats = (currentSub.data.seats as any)?.[attr] || 0;
+    const newTotal = currentSeats + additionalSeats;
 
     const res = await reseller.subscriptions.changeSeats({
       customerId: domain,
       subscriptionId: subscriptionId,
       requestBody: {
-        numberOfSeats: updatedSeats
+        [attr]: newTotal
       }
     });
 
-    return { success: true, result: res.data, updatedSeats };
+    return { success: true, result: res.data, newTotal };
   } catch (error: any) {
-    console.error(`[RESELLER API ERROR] Failed to update seats for sub '${subscriptionId}':`, error.message);
+    console.error(`[RESELLER SEAT UPDATE ERROR] Failed to update seats for ${domain}:`, error.message);
     return { success: false, error: error.message };
   }
 }
@@ -122,7 +177,7 @@ export async function fetchLiveProductsFromSheets(): Promise<Product[]> {
     return cachedSheetsProducts;
   }
 
-  const spreadsheetId = process.env.GOOGLE_SHEETS_SPREADSHEET_ID || process.env.GOOGLE_SHEETS_CATALOG_ID || '1mTUa44Wun2YHIbCT7D7VYa1NWcfYuddLpJgBSHHjGTA';
+  const spreadsheetId = process.env.GOOGLE_SHEETS_SPREADSHEET_ID || process.env.GOOGLE_SHEETS_CATALOG_ID || '';
   if (!spreadsheetId) {
     console.warn('[SHEETS API WARNING] No GOOGLE_SHEETS_SPREADSHEET_ID set in environment variables.');
     return cachedSheetsProducts;
