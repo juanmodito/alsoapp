@@ -124,9 +124,15 @@ export async function updateResellerSeats(domain: string, subscriptionId: string
     });
 
     const planName = currentSub.data.plan?.planName || 'FLEXIBLE';
+    const seatsObj = currentSub.data.seats as any;
     const attr = planName === 'ANNUAL' ? 'numberOfSeats' : 'maximumNumberOfSeats';
-    const currentSeats = (currentSub.data.seats as any)?.[attr] || 0;
-    const newTotal = currentSeats + additionalSeats;
+    
+    let baseSeats = seatsObj?.[attr] || 0;
+    if (attr === 'maximumNumberOfSeats' && baseSeats >= 50000) {
+      baseSeats = seatsObj?.numberOfSeats || seatsObj?.licensedNumberOfSeats || 0;
+    }
+    
+    const newTotal = baseSeats + additionalSeats;
 
     const res = await reseller.subscriptions.changeSeats({
       customerId: domain,

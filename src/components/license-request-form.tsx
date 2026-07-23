@@ -289,7 +289,14 @@ export const LicenseRequestForm: React.FC<LicenseRequestFormProps> = ({
                     {selectedProduct && selectedProduct.currentSeats !== undefined && selectedProduct.currentSeats > 0 && (
                       <p className="text-xs text-slate-500 pt-1 flex items-center gap-1 font-medium">
                         <span className="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
-                        <span>Current active: <strong className="text-slate-800">{selectedProduct.currentSeats} seats</strong></span>
+                        <span>
+                          Current active:{' '}
+                          <strong className="text-slate-800">
+                            {selectedProduct.licensedSeats && selectedProduct.licensedSeats > 0 && selectedProduct.licensedSeats !== selectedProduct.currentSeats
+                              ? `${selectedProduct.licensedSeats} assigned / ${selectedProduct.currentSeats} contracted seats`
+                              : `${selectedProduct.currentSeats} seats`}
+                          </strong>
+                        </span>
                         <span className="text-slate-400">({selectedProduct.currentSeats + (licenses || 0)} total after order)</span>
                       </p>
                     )}

@@ -45,7 +45,9 @@ export default async function RequestLicensePage() {
         .replace('Google Workspace', 'GW')
         .replace(' - Archived User', ' Archived User');
 
-      const currentSeats = sub.seats?.numberOfSeats || sub.seats?.maximumNumberOfSeats || sub.seats?.licensedNumberOfSeats || 0;
+      const currentSeats = sub.seats?.numberOfSeats || 
+        (sub.seats?.maximumNumberOfSeats && sub.seats.maximumNumberOfSeats < 50000 ? sub.seats.maximumNumberOfSeats : 0) || 
+        sub.seats?.licensedNumberOfSeats || 0;
       const licensedSeats = sub.seats?.licensedNumberOfSeats || 0;
       const isAnnual = sub.plan?.planName === 'ANNUAL' || sub.billingMethod === 'OFFLINE';
 
