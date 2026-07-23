@@ -90,12 +90,15 @@ cp .env.example .env.local
 | Environment Variable | Description | Example |
 | :--- | :--- | :--- |
 | `PORT` | Application server port | `3000` |
+| `APP_URL` | Public application URL (Cloud Run or Custom Domain) | `https://dito-orders-portal-uc.a.run.app` |
+| `GOOGLE_CLIENT_ID` | GCP OAuth 2.0 Client ID | `123456789-abc.apps.googleusercontent.com` |
+| `GOOGLE_CLIENT_SECRET` | GCP OAuth 2.0 Client Secret | `GOCSPX-abcdefghijklmnopqrstuvwxyz` |
 | `GOOGLE_SERVICE_ACCOUNT_EMAIL` | GCP Service Account Email | `also-production@dito-also-production.iam.gserviceaccount.com` |
 | `GOOGLE_ADMIN_SUBJECT_EMAIL` | Google Workspace Reseller Admin Email | `michelle@reseller.ditoweb.com` |
 | `GOOGLE_PRIVATE_KEY` | GCP Service Account Private Key (RSA) | `"-----BEGIN PRIVATE KEY-----\n..."` |
-| `GOOGLE_SHEETS_SPREADSHEET_ID` | Master Catalog Google Sheet ID | `1mTUa44Wun2YHIbCT7D7VYa1NWcfYuddLpJgBSHHjGTA` |
+| `GOOGLE_SHEETS_SPREADSHEET_ID` | Master Catalog & Products Sheet ID | `1mTUa44Wun2YHIbCT7D7VYa1NWcfYuddLpJgBSHHjGTA` |
+| `GOOGLE_SHEETS_PRORATED_LICENSES_ID` | Prorated Licenses Order Audit Log Sheet ID | `1GhqvuG-ySIY-aDETk0gDGWxOF9GZqFPQTi2E6IUClRQ` |
 | `NOTIFICATION_EMAIL_TO` | Order Notification Recipients (Comma-separated) | `ar@ditoweb.com,ops@ditoweb.com` |
-| `ALLOWED_ORIGINS` | Allowed CORS Origins | `http://localhost:3000` |
 
 ---
 
@@ -115,8 +118,8 @@ cp .env.example .env.local
 3. **Local Flow Verification**:
    - Navigate to `http://localhost:3000/`.
    - Click **Sign In with Google**.
-   - Input test email (e.g., `juan@demo.ditoweb.com`).
-   - Verify redirection to `/request_license` and confirm catalog options populate cleanly in the dropdown.
+   - Authenticate with your organization Google Workspace account.
+   - Verify automatic redirection to `/request_license` and confirm active subscriptions and software catalog populate cleanly.
 
 ---
 

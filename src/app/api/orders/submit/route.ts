@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { updateResellerSeats, fetchLiveProductsFromSheets } from '@/lib/services/google-reseller';
+import { updateResellerSeats, fetchLiveProductsFromSheets, appendOrderToProratedSheet } from '@/lib/services/google-reseller';
 import { sendOrderConfirmationEmail } from '@/lib/services/mailer';
 import { isAuthorizedDomain } from '@/lib/services/domain-auth';
 import { getAuthenticatedUserSession } from '@/lib/services/auth-session';
@@ -58,7 +58,17 @@ export async function POST(req: NextRequest) {
 
     ordersDatabase.push(orderRecord);
 
-    // Trigger automated email notification
+    // 1. Append order audit log entry to Google Sheets Prorated Licenses Spreadsheet
+    await appendOrderToProratedSheet({
+      domain: domain,
+      productCode: productCode,
+      productName: productName,
+      qty: licenses,
+      monthlyCost: costEach,
+      totalPrice: total
+    });
+
+    // 2. Trigger automated email notification
     await sendOrderConfirmationEmail({
       customerEmail: userEmail,
       customerDomain: domain,

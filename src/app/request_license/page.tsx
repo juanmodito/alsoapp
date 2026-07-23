@@ -45,7 +45,7 @@ export default async function RequestLicensePage() {
       const licensedSeats = sub.seats?.licensedNumberOfSeats || 0;
       const isAnnual = sub.plan?.planName === 'ANNUAL' || sub.billingMethod === 'OFFLINE';
 
-      const matched = allProducts.find(p => 
+      const matched = allProducts.find(p =>
         (p.sku_id && p.sku_id === sub.skuId) ||
         (p.code && p.code === sub.skuId) ||
         (p.name && sub.skuName && p.name.toLowerCase().includes(sub.skuName.toLowerCase().replace('google workspace', '').replace('g suite', '').trim()))
@@ -60,9 +60,9 @@ export default async function RequestLicensePage() {
         monthly_cost: matched ? matched.monthly_cost : 0,
         daily_cost: matched ? matched.daily_cost : 0,
         annual: isAnnual,
-        sku_id: sub.skuId,
+        sku_id: sub.skuId || undefined,
         active: true,
-        subscriptionId: sub.subscriptionId,
+        subscriptionId: sub.subscriptionId || undefined,
         category: "Active Subscriptions",
         currentSeats: currentSeats,
         licensedSeats: licensedSeats

@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
+import { getRequestOrigin } from '@/lib/services/origin';
 
 export async function GET(req: Request) {
-  const url = new URL(req.url);
+  const origin = getRequestOrigin(req);
   const cookieStore = await cookies();
   cookieStore.delete('dito_session');
 
-  return NextResponse.redirect(`${url.origin}/request_license`);
+  return NextResponse.redirect(`${origin}/request_license`);
 }
