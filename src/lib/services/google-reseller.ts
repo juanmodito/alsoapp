@@ -11,41 +11,16 @@ let cachedSheetsProducts: Product[] = [];
 let lastSheetsFetchTime: number = 0;
 const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour cache
 
-/**
- * Known SKU ID mapping dictionary for Google Workspace, Chrome, & Cloud Search products
- */
-const KNOWN_SKU_MAP: Record<string, string> = {
-  '1010020020': 'Google Workspace Business Starter',
-  '1010020025': 'Google Workspace Business Standard',
-  '1010020028': 'Google Workspace Business Plus',
-  '1010020030': 'Google Workspace Enterprise Starter',
-  '1010020031': 'Google Workspace Enterprise Standard',
-  '1010020032': 'Google Workspace Enterprise Plus',
-  '1010060001': 'Google Workspace Enterprise Plus - Archived User',
-  '1010060002': 'Google Workspace Business Standard - Archived User',
-  '1010060003': 'Google Workspace Business Plus - Archived User',
-  '1010310001': 'ChromeOS Enterprise Upgrade',
-  '1010310002': 'ChromeOS Upgrade',
-  '1010330001': 'Cloud Search Platform',
-  '1010010001': 'Cloud Identity Free',
-  '1010010002': 'Cloud Identity Premium'
-};
-
-/**
- * Resolves a human-readable SKU name from skuName, catalog matching, or known SKU dictionary
- */
 export function resolveSkuName(skuId?: string, skuName?: string, catalogProducts: Product[] = []): string {
   if (skuName && skuName.trim().length > 0 && !skuName.startsWith('SKU_')) {
     return skuName;
   }
 
-  if (skuId && KNOWN_SKU_MAP[skuId]) {
-    return KNOWN_SKU_MAP[skuId];
-  }
-
-  const matched = catalogProducts.find(p => (p.sku_id && p.sku_id === skuId) || (p.code && p.code === skuId));
-  if (matched && matched.name) {
-    return matched.name;
+  if (skuId) {
+    const matched = catalogProducts.find(p => (p.sku_id && p.sku_id === skuId) || (p.code && p.code === skuId));
+    if (matched && matched.name) {
+      return matched.name;
+    }
   }
 
   return skuId ? `Google Product (${skuId})` : 'Google Workspace License';
@@ -177,11 +152,7 @@ export async function fetchLiveProductsFromSheets(): Promise<Product[]> {
     return cachedSheetsProducts;
   }
 
-  const spreadsheetId = process.env.GOOGLE_SHEETS_SPREADSHEET_ID || process.env.GOOGLE_SHEETS_CATALOG_ID || '';
-  if (!spreadsheetId) {
-    console.warn('[SHEETS API WARNING] No GOOGLE_SHEETS_SPREADSHEET_ID set in environment variables.');
-    return cachedSheetsProducts;
-  }
+  const spreadsheetId = process.env.GOOGLE_SHEETS_SPREADSHEET_ID || process.env.GOOGLE_SHEETS_CATALOG_ID || '1mTUa44Wun2YHIbCT7D7VYa1NWcfYuddLpJgBSHHjGTA';
 
   try {
     const auth = getGoogleAuth(SPREADSHEET_SCOPES);
@@ -198,10 +169,12 @@ export async function fetchLiveProductsFromSheets(): Promise<Product[]> {
       return cachedSheetsProducts;
     }
 
+    const isvKeywords = ['chrome edu', 'chrome enterprise', 'chrome os', 'chrome education', 'chrome management', 'aodocs', 'pandadoc', 'spanning', 'uberconference', 'virtru', 'zixcorp'];
+
     const products: Product[] = [];
     for (let idx = 1; idx < rows.length; idx++) {
       const row = rows[idx];
-      if (row.length > 5) {
+      if (row && row.length > 5) {
         const rawCode = row[10] || '';
         const code = (rawCode && rawCode !== 'TBD') ? rawCode : `PROD_${idx}`;
         const name = row[5] || `Product ${idx}`;
@@ -209,6 +182,9 @@ export async function fetchLiveProductsFromSheets(): Promise<Product[]> {
         const price = parseFloat(priceStr) || 0;
         const isMonthly = row[4] === '1';
         const description = row[11] || name;
+
+        const isHardware = ['chromebook', 'chromebox', 'device', 'hardware'].some(h => name.toLowerCase().includes(h));
+        const isAddon = !isHardware && (isvKeywords.some(k => name.toLowerCase().includes(k)) || row[4] === '2');
 
         products.push({
           product_key: `${code}_${idx}`,
@@ -221,14 +197,15 @@ export async function fetchLiveProductsFromSheets(): Promise<Product[]> {
           annual: !isMonthly,
           sku_id: row[12] || '',
           active: true,
-          category: 'Master Catalog'
+          category: isAddon ? 'Software & Services' : 'Master Catalog',
+          alsoType: isAddon ? 2 : 1
         });
       }
     }
 
     cachedSheetsProducts = products;
     lastSheetsFetchTime = now;
-    console.log(`[SHEETS API] Successfully synced ${products.length} live products from Google Sheets.`);
+    console.log(`[SHEETS API] Successfully synced ${products.length} products from Google Sheets.`);
     return products;
   } catch (error: any) {
     console.error('[SHEETS API ERROR] Failed to fetch catalog from Google Sheets:', error.message);

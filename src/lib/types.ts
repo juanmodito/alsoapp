@@ -13,6 +13,7 @@ export interface Product {
   subscriptionId?: string;
   currentSeats?: number;
   licensedSeats?: number;
+  alsoType?: number; // 1 = ONLINE (Reseller active sub only), 2 = OFFLINE (ISV / Add-on available to all)
 }
 
 export interface Subscription {
